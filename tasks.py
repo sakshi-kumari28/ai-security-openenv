@@ -55,7 +55,7 @@ class SemanticNormalizer:
         If no mapping exists, returns original lowercased version.
         """
         cls._build_map()
-        normalized = value.lower().strip() if isinstance(value, str) else str(value).lower().strip()
+        normalized = value.lower().strip()
         return cls._NORMALIZATION_MAP.get(normalized, normalized)
 
     @classmethod

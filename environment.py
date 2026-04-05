@@ -205,7 +205,7 @@ class AiSecurityEnv:
             return {"score": 0.0, "reward": 0.0, "details": {}}
 
         expected: Dict[str, Any] = scenario["expected"]
-        details = {}
+        details: Dict[str, Any] = {}
         total_score = 0.0
 
         # Grade "allow" field (0.3 weight)
@@ -239,7 +239,7 @@ class AiSecurityEnv:
         firewall_score: float = 0.0
         if "firewall_rule" in expected:
             expected_rule: Any = expected["firewall_rule"]
-            actual_rule: Any = action.get("firewall_rule", {})
+            actual_rule: Dict[str, Any] = action.get("firewall_rule", {})
             if (
                 isinstance(actual_rule, dict) and
                 actual_rule.get("rule_action") == expected_rule.get("rule_action") and
