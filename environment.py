@@ -55,30 +55,45 @@ class SecurityEvent:
         }
 
 
-class AiSecurityEnv:
-    """
-    OpenEnv environment for AI Security Policy Enforcement.
-    Simulates a cybersecurity environment where an AI agent detects threats,
-    prevents data leakage, and dynamically generates firewall rules.
-    """
+class ScenarioGenerator:
+    """Dynamic scenario generator for realistic threat events"""
 
-    def __init__(self, seed: int = 42):
-        """Initialize the environment."""
-        self.seed = seed
-        random.seed(seed)
-        self.current_event: Optional[SecurityEvent] = None
-        self.step_count = 0
-        self.max_steps = 10
-        self.task_scenarios = self._initialize_scenarios()
+    @staticmethod
+    def generate_random_ip() -> str:
+        """Generate random IP address"""
+        return f"{random.randint(1, 255)}.{random.randint(1, 255)}.{random.randint(1, 255)}.{random.randint(1, 255)}"
 
-    def _initialize_scenarios(self) -> List[Dict[str, Any]]:
-        """Initialize predefined task scenarios."""
-        return [
-            {
-                "name": "Data Leakage Prevention",
+    @staticmethod
+    def generate_event_id() -> str:
+        """Generate event ID"""
+        event_num = random.randint(1000, 9999)
+        return f"EVT-{event_num}"
+
+    @staticmethod
+    def generate_scenario(difficulty: str = "random") -> Dict[str, Any]:
+        """Generate dynamic scenario with randomized parameters"""
+        if difficulty == "random":
+            difficulty = random.choice(["easy", "medium", "hard"])
+
+        # Base parameters
+        event_id = ScenarioGenerator.generate_event_id()
+        external_ip = ScenarioGenerator.generate_random_ip()
+        internal_ip = f"192.168.{random.randint(1, 255)}.{random.randint(1, 255)}"
+        data_size = random.choice(["500MB", "2GB", "5GB", "10GB"])
+        customer_count = random.randint(100, 10000)
+        
+        if difficulty == "easy":
+            # Data exfiltration: clear threat
+            return {
+                "name": f"Data Leakage - {data_size} Transfer",
                 "difficulty": "easy",
-                "event_id": "EVT-001",
-                "logs": ["User initiated data export", "2GB data transfer to external IP"],
+                "event_id": event_id,
+                "logs": [
+                    f"User initiated data export",
+                    f"{data_size} data transfer to external IP {external_ip}",
+                    f"Transfer contains {customer_count} customer records",
+                    "Destination IP reputation: unknown"
+                ],
                 "user_role": "employee",
                 "data_sensitivity": DataSensitivity.HIGH.value,
                 "expected": {
@@ -86,16 +101,20 @@ class AiSecurityEnv:
                     "threat_type": ThreatType.DATA_EXFILTRATION.value,
                     "response_action": "block"
                 }
-            },
-            {
-                "name": "Threat Detection",
+            }
+        elif difficulty == "medium":
+            # Brute force: pattern-based threat
+            failed_attempts = random.randint(3, 8)
+            return {
+                "name": f"Brute Force Attack - {failed_attempts} Attempts",
                 "difficulty": "medium",
-                "event_id": "EVT-002",
+                "event_id": event_id,
                 "logs": [
-                    "Failed login attempt from 192.168.1.50",
-                    "Failed login attempt from 192.168.1.50",
-                    "Failed login attempt from 192.168.1.50",
-                    "Successful login from 192.168.1.50"
+                    f"Failed login attempt from {internal_ip} (attempt 1/{failed_attempts})",
+                    f"Failed login attempt from {internal_ip} (attempt 2/{failed_attempts})",
+                    f"Failed login attempt from {internal_ip} (attempt 3/{failed_attempts})",
+                    f"Successful login from {internal_ip} after failed attempts",
+                    f"Account: admin@company.com"
                 ],
                 "user_role": "unknown",
                 "data_sensitivity": DataSensitivity.MEDIUM.value,
@@ -104,31 +123,117 @@ class AiSecurityEnv:
                     "threat_type": ThreatType.BRUTE_FORCE.value,
                     "response_action": "block_ip"
                 }
-            },
-            {
-                "name": "Advanced Threat Response",
+            }
+        else:  # hard
+            # Multi-stage intrusion: complex threat
+            hour = random.choice([2, 3, 4, 23])
+            query_count = random.randint(50, 500)
+            return {
+                "name": f"Advanced Intrusion - {query_count} DB Queries",
                 "difficulty": "hard",
-                "event_id": "EVT-003",
+                "event_id": event_id,
                 "logs": [
-                    "Unusual data transfer volume detected",
-                    "Access from unknown IP 203.0.113.45",
-                    "Admin login at 02:30 UTC (outside business hours)",
-                    "Database query on sensitive customer records"
+                    f"Unusual data transfer volume: {random.randint(30, 100)}GB in 5 minutes",
+                    f"Access from unknown IP {external_ip}",
+                    f"Admin login at {hour:02d}:30 UTC (outside business hours)",
+                    f"Database query on sensitive_customers table ({query_count} queries)",
+                    f"Concurrent connection from multiple IPs detected",
+                    f"Access pattern: lateral movement detected"
                 ],
                 "user_role": "admin",
                 "data_sensitivity": DataSensitivity.HIGH.value,
                 "expected": {
                     "allow": False,
                     "threat_type": ThreatType.INTRUSION.value,
-                    "response_action": "block + alert",
-                    "firewall_rule": {
-                        "rule_action": "block",
-                        "target": "ip",
-                        "duration": "24h"
-                    }
+                    "response_action": "block + alert"
                 }
             }
-        ]
+
+
+class AiSecurityEnv:
+    """
+    OpenEnv environment for AI Security Policy Enforcement.
+    Simulates a cybersecurity environment where an AI agent detects threats,
+    prevents data leakage, and dynamically generates firewall rules.
+    """
+
+    def __init__(self, seed: int = 42, use_dynamic: bool = True):
+        """Initialize the environment."""
+        self.seed = seed
+        self.use_dynamic = use_dynamic
+        random.seed(seed)
+        self.current_event: Optional[SecurityEvent] = None
+        self.step_count = 0
+        self.max_steps = 10
+        self.task_scenarios = self._initialize_scenarios()
+
+    def _initialize_scenarios(self) -> List[Dict[str, Any]]:
+        """Initialize task scenarios (static or dynamic based on use_dynamic flag)."""
+        if self.use_dynamic:
+            # For dynamic mode, generate 3 representative scenarios on init
+            return [
+                ScenarioGenerator.generate_scenario("easy"),
+                ScenarioGenerator.generate_scenario("medium"),
+                ScenarioGenerator.generate_scenario("hard")
+            ]
+        else:
+            # Static scenarios for reproducibility in testing
+            return [
+                {
+                    "name": "Data Leakage Prevention",
+                    "difficulty": "easy",
+                    "event_id": "EVT-001",
+                    "logs": ["User initiated data export", "2GB data transfer to external IP"],
+                    "user_role": "employee",
+                    "data_sensitivity": DataSensitivity.HIGH.value,
+                    "expected": {
+                        "allow": False,
+                        "threat_type": ThreatType.DATA_EXFILTRATION.value,
+                        "response_action": "block"
+                    }
+                },
+                {
+                    "name": "Threat Detection",
+                    "difficulty": "medium",
+                    "event_id": "EVT-002",
+                    "logs": [
+                        "Failed login attempt from 192.168.1.50",
+                        "Failed login attempt from 192.168.1.50",
+                        "Failed login attempt from 192.168.1.50",
+                        "Successful login from 192.168.1.50"
+                    ],
+                    "user_role": "unknown",
+                    "data_sensitivity": DataSensitivity.MEDIUM.value,
+                    "expected": {
+                        "allow": False,
+                        "threat_type": ThreatType.BRUTE_FORCE.value,
+                        "response_action": "block_ip"
+                    }
+                },
+                {
+                    "name": "Advanced Threat Response",
+                    "difficulty": "hard",
+                    "event_id": "EVT-003",
+                    "logs": [
+                        "Unusual data transfer volume detected",
+                        "Access from unknown IP 203.0.113.45",
+                        "Admin login at 02:30 UTC (outside business hours)",
+                        "Database query on sensitive customer records"
+                    ],
+                    "user_role": "admin",
+                    "data_sensitivity": DataSensitivity.HIGH.value,
+                    "expected": {
+                        "allow": False,
+                        "threat_type": ThreatType.INTRUSION.value,
+                        "response_action": "block + alert",
+                        "firewall_rule": {
+                            "rule_action": "block",
+                            "target": "ip",
+                            "duration": "24h"
+                        }
+                    }
+                }
+            ]
 
     def reset(self) -> Dict[str, Any]:
         """
@@ -136,7 +241,14 @@ class AiSecurityEnv:
         OpenEnv API: reset() -> state
         """
         self.step_count = 0
-        scenario = self.task_scenarios[random.randint(0, len(self.task_scenarios) - 1)]
+        
+        if self.use_dynamic:
+            # Generate a new scenario dynamically on each reset
+            scenario = ScenarioGenerator.generate_scenario(random.choice(["easy", "medium", "hard"]))
+        else:
+            # Use predefined scenarios
+            scenario = self.task_scenarios[random.randint(0, len(self.task_scenarios) - 1)]
+        
         self.current_event = SecurityEvent(
             event_id=scenario["event_id"],
             logs=scenario["logs"],

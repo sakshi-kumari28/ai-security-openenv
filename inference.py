@@ -326,7 +326,7 @@ class LLMAgentAdapter:
     pass
 
 
-def run_benchmark(task_idx: Optional[int] = None, num_episodes: int = 1) -> str:
+def run_benchmark(task_idx: Optional[int] = None, num_episodes: int = 1) -> Dict[str, Any]:
     """
     Run benchmark for selected task.
     
@@ -335,14 +335,69 @@ def run_benchmark(task_idx: Optional[int] = None, num_episodes: int = 1) -> str:
         num_episodes: Number of episodes to run
     
     Returns:
-        Formatted benchmark results as JSON string
+        Formatted benchmark results as dict
     """
     try:
         agent = SecurityAgentBaseline()
         results = agent.run_benchmark(num_episodes)
-        return json.dumps(results, indent=2)
+        return results
     except Exception as e:
-        return json.dumps({"error": str(e)}, indent=2)
+        return {"error": str(e)}
+
+
+def run_dashboard_simulation() -> Dict[str, Any]:
+    """
+    Run simulation for dashboard display with latest event and decision.
+    
+    Returns:
+        {
+            "latest_event": {...},
+            "decision": {...},
+            "average_reward": float,
+            "success_rate": float,
+            "risk_level": str
+        }
+    """
+    try:
+        agent = SecurityAgentBaseline()
+        episode = agent.run_episode()
+        state = agent.env.reset()
+        decision = agent.decide(state)
+        
+        # Run 5 episodes for metrics
+        all_rewards: List[float] = []
+        successes: int = 0
+        for _ in range(5):
+            ep = agent.run_episode()
+            all_rewards.append(ep["reward"])
+            if ep["success"]:
+                successes += 1
+        
+        avg_reward = sum(all_rewards) / len(all_rewards)
+        success_rate = successes / 5
+        
+        if avg_reward >= 0.85:
+            risk_level = "low"
+        elif avg_reward >= 0.70:
+            risk_level = "medium"
+        else:
+            risk_level = "high"
+        
+        return {
+            "latest_event": episode["state"],
+            "decision": decision,
+            "average_reward": round(avg_reward, 4),
+            "success_rate": round(success_rate, 4),
+            "risk_level": risk_level,
+            "episode_details": episode
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def format_benchmark_json(results: Dict[str, Any]) -> str:
+    """Format benchmark results as JSON string"""
+    return json.dumps(results, indent=2)
 
 
 def main():
