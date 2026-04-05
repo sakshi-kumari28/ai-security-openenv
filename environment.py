@@ -241,7 +241,6 @@ class AiSecurityEnv:
             expected_rule: Any = expected["firewall_rule"]
             actual_rule: Dict[str, Any] = action.get("firewall_rule", {})
             if (
-                isinstance(actual_rule, dict) and
                 actual_rule.get("rule_action") == expected_rule.get("rule_action") and
                 actual_rule.get("target") == expected_rule.get("target") and
                 actual_rule.get("duration") == expected_rule.get("duration")
