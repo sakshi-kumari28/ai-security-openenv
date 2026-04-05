@@ -4,9 +4,8 @@ Includes advanced grading robustness with semantic normalization.
 """
 
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 from enum import Enum
-import re
 
 
 import re

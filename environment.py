@@ -2,9 +2,7 @@
 OpenEnv-compliant AI Security Policy Enforcement & Firewall Optimization Environment
 """
 
-import json
 import random
-import string
 from typing import Any, Dict, List, Optional, Tuple
 from dataclasses import dataclass, asdict
 from enum import Enum

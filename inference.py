@@ -362,33 +362,35 @@ def main():
     agent = SecurityAgentBaseline()
     all_rewards = []
     total_steps = 0
-    success_count = 0
+    final_success = False
     
     try:
         # Run episodes
         for episode_idx in range(args.episodes):
             state = agent.env.reset()
             episode_steps = 0
-            episode_rewards = []
             
             while True:
                 episode_steps += 1
                 action = agent.decide(state)
                 observation, reward, done, info = agent.env.step(action)
-                episode_rewards.append(reward)
                 all_rewards.append(reward)
                 
-                # Log STEP
-                error = info.get("error") if "error" in info else None
+                # Convert done and error to JSON-compliant format
+                done_str = "true" if done else "false"
+                error_val = info.get("error")
+                error_str = "null" if error_val is None else json.dumps(error_val)
+                
+                # Log STEP with exact format: [STEP] step=<n> action=<json> reward=<0.00> done=<true|false> error=<null|msg>
                 print(
                     f"[STEP] step={episode_steps} action={json.dumps(action)} "
-                    f"reward={reward:.4f} done={done} error={error}",
+                    f"reward={reward:.2f} done={done_str} error={error_str}",
                     flush=True
                 )
                 
                 if done:
                     if reward >= 0.8:
-                        success_count += 1
+                        final_success = True
                     total_steps += episode_steps
                     break
                 
@@ -396,13 +398,12 @@ def main():
         
         # Calculate final metrics
         avg_reward = sum(all_rewards) / len(all_rewards) if all_rewards else 0.0
-        min_reward = min(all_rewards) if all_rewards else 0.0
-        max_reward = max(all_rewards) if all_rewards else 0.0
+        success_str = "true" if final_success else "false"
+        rewards_list = ",".join([f"{r:.2f}" for r in all_rewards])
         
-        # Log END
+        # Log END with exact format: [END] success=<true|false> steps=<n> score=<score> rewards=<r1,r2,...>
         print(
-            f"[END] success={success_count}/{args.episodes} steps={total_steps} "
-            f"score={avg_reward:.4f} rewards={json.dumps([round(r, 4) for r in all_rewards])}",
+            f"[END] success={success_str} steps={total_steps} score={avg_reward:.2f} rewards={rewards_list}",
             flush=True
         )
         
