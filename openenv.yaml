@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 name: AI Security Policy Enforcement & Firewall Optimization
 version: "1.0.0"
 description: |
@@ -101,7 +100,6 @@ reward_function:
   invalid: -0.2
   step_penalty: -0.05
  
-=======
 name: ai-security-openenv
 version: "1.0"
 description: "OpenEnv environment for AI cybersecurity threat detection and response"
@@ -149,11 +147,9 @@ api:
       - name: "info"
         type: "Dict[str, Any]"
 
->>>>>>> 99333add87ad7a450d1c3bdc3113d19d507a9142
 tasks:
   - id: "data_leakage_prevention"
     name: "Data Leakage Prevention"
-<<<<<<< HEAD
     difficulty: easy
     description: "Detect and block attempts to exfiltrate high-sensitivity data"
   - id: threat_detection_brute_force
@@ -196,7 +192,6 @@ baseline:
     success_rate: "≥ 0.8"
     average_reward: "≥ 0.8"
  
-=======
     difficulty: "easy"
     description: "Detect and prevent unauthorized data export"
     event_id: "EVT-001"
@@ -237,4 +232,3 @@ constraints:
   max_steps: 10
   deterministic: true
   seeded: true
->>>>>>> 99333add87ad7a450d1c3bdc3113d19d507a9142
