@@ -21,10 +21,9 @@ dependencies = [
 ]
 
 [project.scripts]
+server = "server.app:main"
 serve = "server.app:main"
-
-[project.optional-dependencies]
-dev = ["pytest", "black", "flake8"]
+start = "server.app:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
