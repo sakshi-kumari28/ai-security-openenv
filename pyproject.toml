@@ -21,7 +21,7 @@ dependencies = [
 ]
 
 [project.scripts]
-serve = "environment:app"
+serve = "server.app:app"
 
 [project.optional-dependencies]
 dev = ["pytest", "black", "flake8"]
