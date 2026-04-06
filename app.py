@@ -1,11 +1,8 @@
-import subprocess
-import time
+# Replace app.py content with just:
+echo "from environment import app
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=7860)" > app.py
 
-print("Starting AI Security OpenEnv...")
-
-subprocess.run(["python", "inference.py"])
-
-# keep container alive
-
-while True:
-    time.sleep(60)
+git add app.py
+git commit -m "fix: app.py now runs Flask server"
+git push
