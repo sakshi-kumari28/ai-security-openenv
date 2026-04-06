@@ -2,11 +2,10 @@
 OpenEnv-compliant AI Security Policy Enforcement & Firewall Optimization Environment
 Includes Flask HTTP server exposing required OpenEnv endpoints.
 """
-<<<<<<< HEAD
-import json
-=======
 
->>>>>>> 99333add87ad7a450d1c3bdc3113d19d507a9142
+import json
+
+
 import random
 from typing import Any, Dict, List, Optional, Tuple
 from dataclasses import dataclass, asdict
@@ -59,7 +58,7 @@ class SecurityEvent:
             "status":           self.status,
             "decision":         self.decision,
         }
-<<<<<<< HEAD
+
  
 # ── Core environment ──────────────────────────────────────────────────────────
  
@@ -103,7 +102,7 @@ class AiSecurityEnv:
                     "Failed login attempt from 192.168.1.50",
                     "Failed login attempt from 192.168.1.50",
                     "Successful login from 192.168.1.50",
-=======
+
 
 
 class ScenarioGenerator:
@@ -166,12 +165,11 @@ class ScenarioGenerator:
                     f"Failed login attempt from {internal_ip} (attempt 3/{failed_attempts})",
                     f"Successful login from {internal_ip} after failed attempts",
                     f"Account: admin@company.com"
->>>>>>> 99333add87ad7a450d1c3bdc3113d19d507a9142
                 ],
                 "user_role":        "unknown",
                 "data_sensitivity": DataSensitivity.MEDIUM.value,
                 "expected": {
-<<<<<<< HEAD
+
                     "allow":           False,
                     "threat_type":     ThreatType.BRUTE_FORCE.value,
                     "response_action": "block_ip",
@@ -186,7 +184,7 @@ class ScenarioGenerator:
                     "Access from unknown IP 203.0.113.45",
                     "Admin login at 02:30 UTC (outside business hours)",
                     "Database query on sensitive customer records",
-=======
+
                     "allow": False,
                     "threat_type": ThreatType.BRUTE_FORCE.value,
                     "response_action": "block_ip"
@@ -207,12 +205,11 @@ class ScenarioGenerator:
                     f"Database query on sensitive_customers table ({query_count} queries)",
                     f"Concurrent connection from multiple IPs detected",
                     f"Access pattern: lateral movement detected"
->>>>>>> 99333add87ad7a450d1c3bdc3113d19d507a9142
                 ],
                 "user_role":        "admin",
                 "data_sensitivity": DataSensitivity.HIGH.value,
                 "expected": {
-<<<<<<< HEAD
+
                     "allow":           False,
                     "threat_type":     ThreatType.INTRUSION.value,
                     "response_action": "block + alert",
@@ -227,7 +224,7 @@ class ScenarioGenerator:
  
     # ── OpenEnv API ───────────────────────────────────────────────────────────
  
-=======
+
                     "allow": False,
                     "threat_type": ThreatType.INTRUSION.value,
                     "response_action": "block + alert"
@@ -321,13 +318,12 @@ class AiSecurityEnv:
                 }
             ]
 
->>>>>>> 99333add87ad7a450d1c3bdc3113d19d507a9142
     def reset(self) -> Dict[str, Any]:
         """Reset environment and return initial state."""
         self.step_count = 0
-<<<<<<< HEAD
+
         scenario = random.choice(self.task_scenarios)
-=======
+
         
         if self.use_dynamic:
             # Generate a new scenario dynamically on each reset
@@ -337,7 +333,6 @@ class AiSecurityEnv:
             scenario = self.task_scenarios[random.randint(0, len(self.task_scenarios) - 1)]
         
         self.current_scenario = scenario
->>>>>>> 99333add87ad7a450d1c3bdc3113d19d507a9142
         self.current_event = SecurityEvent(
             event_id         = scenario["event_id"],
             logs             = scenario["logs"],
@@ -353,7 +348,7 @@ class AiSecurityEnv:
     def step(self, action: Dict[str, Any]) -> Tuple[Dict[str, Any], float, bool, Dict[str, Any]]:
         """Execute one environment step."""
         self.step_count += 1
-<<<<<<< HEAD
+
  
         if not isinstance(action, dict):
             return (
@@ -367,7 +362,7 @@ class AiSecurityEnv:
         reward = grade["reward"]
         done   = (reward == 1.0) or (self.step_count >= self.max_steps)
  
-=======
+
 
         # Execute grading
         grade: Dict[str, Any] = self._grade_action(action)
@@ -381,7 +376,6 @@ class AiSecurityEnv:
             "done": done
         }
 
->>>>>>> 99333add87ad7a450d1c3bdc3113d19d507a9142
         if done and self.current_event:
             self.current_event.status   = "processed"
             self.current_event.decision = action
@@ -403,7 +397,7 @@ class AiSecurityEnv:
     def _grade_action(self, action: Dict[str, Any]) -> Dict[str, Any]:
         if self.current_event is None:
             return {"score": 0.0, "reward": 0.0, "details": {}}
-<<<<<<< HEAD
+
  
         scenario = self._find_current_scenario()
         if scenario is None:
@@ -411,7 +405,7 @@ class AiSecurityEnv:
  
         expected    = scenario["expected"]
         details     = {}
-=======
+
 
         # Get expected output for current scenario
         scenario: Optional[Dict[str, Any]] = self._find_current_scenario()
@@ -420,7 +414,6 @@ class AiSecurityEnv:
 
         expected: Dict[str, Any] = scenario["expected"]
         details: Dict[str, Any] = {}
->>>>>>> 99333add87ad7a450d1c3bdc3113d19d507a9142
         total_score = 0.0
  
         # allow — 0.3
@@ -449,7 +442,7 @@ class AiSecurityEnv:
             "score":    response_score,
         }
         total_score += response_score * 0.2
-<<<<<<< HEAD
+
  
         # firewall_rule — 0.2
         firewall_score = 0.0
@@ -461,7 +454,7 @@ class AiSecurityEnv:
                 and actual_rule.get("rule_action") == expected_rule.get("rule_action")
                 and actual_rule.get("target")      == expected_rule.get("target")
                 and actual_rule.get("duration")    == expected_rule.get("duration")
-=======
+
 
         # Grade "firewall_rule" field (0.2 weight)
         firewall_score: float = 0.0
@@ -472,7 +465,6 @@ class AiSecurityEnv:
                 actual_rule.get("rule_action") == expected_rule.get("rule_action") and
                 actual_rule.get("target") == expected_rule.get("target") and
                 actual_rule.get("duration") == expected_rule.get("duration")
->>>>>>> 99333add87ad7a450d1c3bdc3113d19d507a9142
             ):
                 firewall_score = 1.0
         elif action.get("firewall_rule") is None:
@@ -570,7 +562,7 @@ def state():
 # ── Validation helper (unchanged) ─────────────────────────────────────────────
  
 def validate_openenv_api():
-<<<<<<< HEAD
+
     e = AiSecurityEnv()
     assert hasattr(e, "reset") and callable(e.reset)
     assert hasattr(e, "step")  and callable(e.step)
@@ -584,7 +576,7 @@ def validate_openenv_api():
     assert isinstance(reward, float)
     assert isinstance(done,   bool)
     assert isinstance(info,   dict)
-=======
+
     """Validate the environment implements required OpenEnv API."""
     env = AiSecurityEnv()
     
@@ -615,7 +607,6 @@ def validate_openenv_api():
     assert isinstance(done, bool), "done should be bool"
     assert isinstance(info, dict), "info should be dict"
     
->>>>>>> 99333add87ad7a450d1c3bdc3113d19d507a9142
     print("[OK] OpenEnv API compliance validated")
  
  
