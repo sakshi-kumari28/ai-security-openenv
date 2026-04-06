@@ -1,7 +1,6 @@
 """
 OpenAI-compatible agent runner for AI Security environment
 Includes evaluation summary and performance metrics.
-<<<<<<< HEAD
 Serves as a baseline implementation showing how to interact with the environment.
  
 STDOUT FORMAT
@@ -10,22 +9,16 @@ STDOUT FORMAT
     [START] task=<task_name> env=<benchmark> model=<model_name>
     [STEP]  step=<n> action=<action_str> reward=<0.00> done=<true|false> error=<msg|null>
     [END]   success=<true|false> steps=<n> score=<score> rewards=<r1,r2,...,rn>
-=======
->>>>>>> 99333add87ad7a450d1c3bdc3113d19d507a9142
 """
  
 import json
-<<<<<<< HEAD
 import os
 import textwrap
-=======
->>>>>>> 99333add87ad7a450d1c3bdc3113d19d507a9142
 from typing import Any, Dict, List, Optional
  
 from openai import OpenAI
  
 from environment import AiSecurityEnv
-<<<<<<< HEAD
  
 # ── Required env vars ─────────────────────────────────────────────────────────
 API_KEY      = os.getenv("HF_TOKEN") or os.getenv("API_KEY")
@@ -62,10 +55,8 @@ def log_end(success: bool, steps: int, score: float, rewards: List[float]) -> No
  
  
 # ── Evaluation Summary ────────────────────────────────────────────────────────
-=======
 
 
->>>>>>> 99333add87ad7a450d1c3bdc3113d19d507a9142
 class EvaluationSummary:
     """Structured evaluation summary with performance metrics and risk assessment."""
  
@@ -124,7 +115,6 @@ class EvaluationSummary:
         }
  
     @staticmethod
-<<<<<<< HEAD
     def _generate_recommendations(
         avg_score: float,
         success_rate: float,
@@ -133,13 +123,11 @@ class EvaluationSummary:
     ) -> List[str]:
         recommendations = []
  
-=======
     def _generate_recommendations(avg_score: float, success_rate: float,
                                   scores: List[float], risk_level: str) -> List[str]:
         """Generate actionable recommendations based on performance"""
         recommendations: List[str] = []
 
->>>>>>> 99333add87ad7a450d1c3bdc3113d19d507a9142
         if avg_score >= 0.85:
             recommendations.append("Agent demonstrates strong threat detection capability.")
         elif avg_score >= 0.70:
@@ -188,11 +176,9 @@ class EvaluationSummary:
  
 # ── Baseline heuristic agent ──────────────────────────────────────────────────
 class SecurityAgentBaseline:
-<<<<<<< HEAD
     """Baseline agent using pattern matching to solve security tasks."""
  
     def __init__(self):
-=======
     """
     Baseline agent that uses pattern matching to solve security tasks.
     Can be extended with LLM calls (OpenAI, Anthropic, etc.)
@@ -200,7 +186,6 @@ class SecurityAgentBaseline:
 
     def __init__(self):
         """Initialize agent"""
->>>>>>> 99333add87ad7a450d1c3bdc3113d19d507a9142
         self.env = AiSecurityEnv()
  
     def run_episode(self, task_id: Optional[str] = None) -> Dict[str, Any]:
@@ -215,12 +200,10 @@ class SecurityAgentBaseline:
             "observation": observation,
  
     def decide(self, state: Dict[str, Any]) -> Dict[str, Any]:
-<<<<<<< HEAD
         data_sensitivity = state.get("data_sensitivity", "low")
         logs_text        = " ".join(logs).lower()
         # Data exfiltration
         if any(kw in logs_text for kw in ["exfiltrate", "export", "transfer", "2gb"]):
-=======
         """
         Make a security decision based on the current state.
         This is a baseline heuristic implementation.
@@ -243,7 +226,6 @@ class SecurityAgentBaseline:
         # Detect data exfiltration
         if any(keyword in logs_text for keyword in ["exfiltrate", "export", "transfer", "2gb"]):
             if data_sensitivity == "high":
->>>>>>> 99333add87ad7a450d1c3bdc3113d19d507a9142
                 return {
                     "allow": False,
                     "threat_type": "data_exfiltration",
@@ -303,7 +285,6 @@ class SecurityAgentBaseline:
         return {"allow": True, "threat_type": "none", "response_action": "allow"}
  
     def run_benchmark(self, num_episodes: int = 10) -> Dict[str, Any]:
-<<<<<<< HEAD
         episodes  = []
         rewards   = []
         successes = 0
@@ -316,7 +297,6 @@ class SecurityAgentBaseline:
                 successes += 1
  
         avg_reward   = sum(rewards) / len(rewards) if rewards else 0.0
-=======
         """
         Run multiple episodes and compute statistics with evaluation summary.
 
@@ -346,7 +326,6 @@ class SecurityAgentBaseline:
         failed: int = num_episodes - successes
 
         # Compute evaluation summary
->>>>>>> 99333add87ad7a450d1c3bdc3113d19d507a9142
         eval_summary = EvaluationSummary.compute_summary(rewards, num_episodes)
  
         return {
@@ -363,7 +342,6 @@ class SecurityAgentBaseline:
             "episodes":         episodes,
         if anomalies >= 3 and data_sensitivity == "high":
         }
-<<<<<<< HEAD
                         "rule_action": "block",
             if data_sensitivity == "high":
  
@@ -466,7 +444,6 @@ class LLMAgentAdapter:
  
 # ── Main entry-point with mandatory stdout format ─────────────────────────────
 def run_task_with_logging(task_name: str = TASK_NAME) -> float:
-=======
 
 
 
@@ -548,7 +525,6 @@ def run_dashboard_simulation() -> Dict[str, Any]:
 def format_benchmark_json(results: Dict[str, Any]) -> str:
     """Format benchmark results as JSON string"""
     return json.dumps(results, indent=2)
->>>>>>> 99333add87ad7a450d1c3bdc3113d19d507a9142
 
     """
     Run one task and emit [START] / [STEP] / [END] logs.
@@ -609,10 +585,7 @@ def format_benchmark_json(results: Dict[str, Any]) -> str:
  
  
 def main():
-<<<<<<< HEAD
-=======
     """Main execution with OpenEnv-compliant logging format"""
->>>>>>> 99333add87ad7a450d1c3bdc3113d19d507a9142
     import argparse
  
     parser = argparse.ArgumentParser(description="Run AI Security Agent")
@@ -623,7 +596,6 @@ def main():
         default="llm",
         help="llm = OpenAI client with stdout logs (required for submission)",
 
-<<<<<<< HEAD
     )
     args = parser.parse_args()
 
@@ -673,7 +645,6 @@ def main():
             print(f"  {i}. {rec}")
         print("=" * 70 + "\n")
         print(json.dumps(benchmark, indent=2, default=str))
-=======
     parser = argparse.ArgumentParser(description="Run AI Security Agent Baseline")
     parser.add_argument("--episodes", type=int, default=1, help="Number of episodes to run")
     parser.add_argument("--task", type=int, default=None, help="Task index (0/1/2) or None for random")
@@ -741,7 +712,6 @@ def main():
     except Exception as e:
         print(f"[ERROR] {type(e).__name__}: {str(e)}", flush=True)
         raise
->>>>>>> 99333add87ad7a450d1c3bdc3113d19d507a9142
 
  
  
