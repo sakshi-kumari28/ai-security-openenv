@@ -1,348 +1,192 @@
-"""
+python -c "
+content = '''\"\"\"
 OpenEnv-compliant AI Security Policy Enforcement & Firewall Optimization Environment
 Includes Flask HTTP server exposing required OpenEnv endpoints.
-"""
+\"\"\"
 import json
 import random
 from typing import Any, Dict, List, Optional, Tuple
 from dataclasses import dataclass, asdict
 from enum import Enum
- 
 from flask import Flask, request, jsonify
- 
+
 app = Flask(__name__)
- 
-# ── Enums ─────────────────────────────────────────────────────────────────────
- 
+
 class DataSensitivity(Enum):
-    LOW    = "low"
-    MEDIUM = "medium"
-    HIGH   = "high"
- 
+    LOW    = \"low\"
+    MEDIUM = \"medium\"
+    HIGH   = \"high\"
+
 class ThreatType(Enum):
-    DATA_EXFILTRATION = "data_exfiltration"
-    BRUTE_FORCE       = "brute_force"
-    INTRUSION         = "intrusion"
-    INSIDER_THREAT    = "insider_threat"
-    NONE              = "none"
- 
-# ── Data classes ──────────────────────────────────────────────────────────────
- 
-@dataclass
-class FirewallRule:
-    rule_action: str   # "allow" or "block"
-    target:      str   # "ip" or "endpoint"
-    duration:    str   # e.g. "24h", "1h"
- 
-    def to_dict(self) -> Dict[str, Any]:
-        return asdict(self)
- 
+    DATA_EXFILTRATION = \"data_exfiltration\"
+    BRUTE_FORCE       = \"brute_force\"
+    INTRUSION         = \"intrusion\"
+    NONE              = \"none\"
+
 @dataclass
 class SecurityEvent:
     event_id:         str
-    logs:             List[str]
+    logs:             list
     user_role:        str
     data_sensitivity: str
-    status:           str = "open"
-    decision:         Optional[Dict[str, Any]] = None
- 
-    def to_dict(self) -> Dict[str, Any]:
+    status:           str = \"open\"
+    decision:         object = None
+
+    def to_dict(self):
         return {
-            "event_id":         self.event_id,
-            "logs":             self.logs,
-            "user_role":        self.user_role,
-            "data_sensitivity": self.data_sensitivity,
-            "status":           self.status,
-            "decision":         self.decision,
+            \"event_id\":         self.event_id,
+            \"logs\":             self.logs,
+            \"user_role\":        self.user_role,
+            \"data_sensitivity\": self.data_sensitivity,
+            \"status\":           self.status,
+            \"decision\":         self.decision,
         }
- 
-# ── Core environment ──────────────────────────────────────────────────────────
- 
+
 class AiSecurityEnv:
-    """
-    OpenEnv environment for AI Security Policy Enforcement.
-    """
- 
-    def __init__(self, seed: int = 42):
+    def __init__(self, seed=42):
         self.seed = seed
         random.seed(seed)
-        self.current_event: Optional[SecurityEvent] = None
-        self.step_count  = 0
-        self.max_steps   = 10
+        self.current_event = None
+        self.step_count = 0
+        self.max_steps = 10
         self.task_scenarios = self._initialize_scenarios()
- 
-    def _initialize_scenarios(self) -> List[Dict[str, Any]]:
+
+    def _initialize_scenarios(self):
         return [
             {
-                "name":             "Data Leakage Prevention",
-                "difficulty":       "easy",
-                "event_id":         "EVT-001",
-                "logs":             [
-                    "User initiated data export",
-                    "2GB data transfer to external IP",
-                ],
-                "user_role":        "employee",
-                "data_sensitivity": DataSensitivity.HIGH.value,
-                "expected": {
-                    "allow":           False,
-                    "threat_type":     ThreatType.DATA_EXFILTRATION.value,
-                    "response_action": "block",
-                },
+                \"name\": \"Data Leakage Prevention\",
+                \"difficulty\": \"easy\",
+                \"event_id\": \"EVT-001\",
+                \"logs\": [\"User initiated data export\", \"2GB data transfer to external IP\"],
+                \"user_role\": \"employee\",
+                \"data_sensitivity\": \"high\",
+                \"expected\": {\"allow\": False, \"threat_type\": \"data_exfiltration\", \"response_action\": \"block\"},
             },
             {
-                "name":             "Threat Detection",
-                "difficulty":       "medium",
-                "event_id":         "EVT-002",
-                "logs":             [
-                    "Failed login attempt from 192.168.1.50",
-                    "Failed login attempt from 192.168.1.50",
-                    "Failed login attempt from 192.168.1.50",
-                    "Successful login from 192.168.1.50",
-                ],
-                "user_role":        "unknown",
-                "data_sensitivity": DataSensitivity.MEDIUM.value,
-                "expected": {
-                    "allow":           False,
-                    "threat_type":     ThreatType.BRUTE_FORCE.value,
-                    "response_action": "block_ip",
-                },
+                \"name\": \"Threat Detection\",
+                \"difficulty\": \"medium\",
+                \"event_id\": \"EVT-002\",
+                \"logs\": [\"Failed login attempt from 192.168.1.50\", \"Failed login attempt from 192.168.1.50\", \"Failed login attempt from 192.168.1.50\", \"Successful login from 192.168.1.50\"],
+                \"user_role\": \"unknown\",
+                \"data_sensitivity\": \"medium\",
+                \"expected\": {\"allow\": False, \"threat_type\": \"brute_force\", \"response_action\": \"block_ip\"},
             },
             {
-                "name":             "Advanced Threat Response",
-                "difficulty":       "hard",
-                "event_id":         "EVT-003",
-                "logs":             [
-                    "Unusual data transfer volume detected",
-                    "Access from unknown IP 203.0.113.45",
-                    "Admin login at 02:30 UTC (outside business hours)",
-                    "Database query on sensitive customer records",
-                ],
-                "user_role":        "admin",
-                "data_sensitivity": DataSensitivity.HIGH.value,
-                "expected": {
-                    "allow":           False,
-                    "threat_type":     ThreatType.INTRUSION.value,
-                    "response_action": "block + alert",
-                    "firewall_rule": {
-                        "rule_action": "block",
-                        "target":      "ip",
-                        "duration":    "24h",
-                    },
-                },
+                \"name\": \"Advanced Threat Response\",
+                \"difficulty\": \"hard\",
+                \"event_id\": \"EVT-003\",
+                \"logs\": [\"Unusual data transfer volume detected\", \"Access from unknown IP 203.0.113.45\", \"Admin login at 02:30 UTC (outside business hours)\", \"Database query on sensitive customer records\"],
+                \"user_role\": \"admin\",
+                \"data_sensitivity\": \"high\",
+                \"expected\": {\"allow\": False, \"threat_type\": \"intrusion\", \"response_action\": \"block + alert\", \"firewall_rule\": {\"rule_action\": \"block\", \"target\": \"ip\", \"duration\": \"24h\"}},
             },
         ]
- 
-    # ── OpenEnv API ───────────────────────────────────────────────────────────
- 
-    def reset(self) -> Dict[str, Any]:
-        """Reset environment and return initial state."""
+
+    def reset(self):
         self.step_count = 0
         scenario = random.choice(self.task_scenarios)
         self.current_event = SecurityEvent(
-            event_id         = scenario["event_id"],
-            logs             = scenario["logs"],
-            user_role        = scenario["user_role"],
-            data_sensitivity = scenario["data_sensitivity"],
+            event_id=scenario[\"event_id\"],
+            logs=scenario[\"logs\"],
+            user_role=scenario[\"user_role\"],
+            data_sensitivity=scenario[\"data_sensitivity\"],
         )
         return self._get_state()
- 
-    def state(self) -> Dict[str, Any]:
-        """Return current state (no side-effects)."""
+
+    def state(self):
         return self._get_state()
- 
-    def step(self, action: Dict[str, Any]) -> Tuple[Dict[str, Any], float, bool, Dict[str, Any]]:
-        """Execute one environment step."""
+
+    def step(self, action):
         self.step_count += 1
- 
         if not isinstance(action, dict):
-            return (
-                self._get_state(),
-                -0.2,
-                True,
-                {"error": "Invalid action format", "grade": {"score": -0.2}},
-            )
- 
-        grade  = self._grade_action(action)
-        reward = grade["reward"]
-        done   = (reward == 1.0) or (self.step_count >= self.max_steps)
- 
+            return self._get_state(), -0.2, True, {\"error\": \"Invalid action\"}
+        grade = self._grade_action(action)
+        reward = grade[\"reward\"]
+        done = (reward == 1.0) or (self.step_count >= self.max_steps)
         if done and self.current_event:
-            self.current_event.status   = "processed"
+            self.current_event.status = \"processed\"
             self.current_event.decision = action
- 
-        return (
-            self._get_state(),
-            reward,
-            done,
-            {"grade": grade, "step": self.step_count, "done": done},
-        )
- 
-    # ── Internal helpers ──────────────────────────────────────────────────────
- 
-    def _get_state(self) -> Dict[str, Any]:
+        return self._get_state(), reward, done, {\"grade\": grade, \"step\": self.step_count, \"done\": done}
+
+    def _get_state(self):
         if self.current_event is None:
-            raise RuntimeError("Environment not initialized. Call reset() first.")
+            raise RuntimeError(\"Call reset() first.\")
         return self.current_event.to_dict()
- 
-    def _grade_action(self, action: Dict[str, Any]) -> Dict[str, Any]:
+
+    def _grade_action(self, action):
         if self.current_event is None:
-            return {"score": 0.0, "reward": 0.0, "details": {}}
- 
+            return {\"score\": 0.0, \"reward\": 0.0, \"details\": {}}
         scenario = self._find_current_scenario()
         if scenario is None:
-            return {"score": 0.0, "reward": 0.0, "details": {}}
- 
-        expected    = scenario["expected"]
-        details     = {}
+            return {\"score\": 0.0, \"reward\": 0.0, \"details\": {}}
+        expected = scenario[\"expected\"]
         total_score = 0.0
- 
-        # allow — 0.3
-        allow_score = 1.0 if action.get("allow") == expected["allow"] else 0.0
-        details["allow"] = {
-            "expected": expected["allow"],
-            "actual":   action.get("allow"),
-            "score":    allow_score,
-        }
+        allow_score = 1.0 if action.get(\"allow\") == expected[\"allow\"] else 0.0
         total_score += allow_score * 0.3
- 
-        # threat_type — 0.3
-        threat_score = 1.0 if action.get("threat_type") == expected["threat_type"] else 0.0
-        details["threat_type"] = {
-            "expected": expected["threat_type"],
-            "actual":   action.get("threat_type"),
-            "score":    threat_score,
-        }
+        threat_score = 1.0 if action.get(\"threat_type\") == expected[\"threat_type\"] else 0.0
         total_score += threat_score * 0.3
- 
-        # response_action — 0.2
-        response_score = 1.0 if action.get("response_action") == expected["response_action"] else 0.0
-        details["response_action"] = {
-            "expected": expected["response_action"],
-            "actual":   action.get("response_action"),
-            "score":    response_score,
-        }
+        response_score = 1.0 if action.get(\"response_action\") == expected[\"response_action\"] else 0.0
         total_score += response_score * 0.2
- 
-        # firewall_rule — 0.2
         firewall_score = 0.0
-        if "firewall_rule" in expected:
-            expected_rule = expected["firewall_rule"]
-            actual_rule   = action.get("firewall_rule", {})
-            if (
-                isinstance(actual_rule, dict)
-                and actual_rule.get("rule_action") == expected_rule.get("rule_action")
-                and actual_rule.get("target")      == expected_rule.get("target")
-                and actual_rule.get("duration")    == expected_rule.get("duration")
-            ):
+        if \"firewall_rule\" in expected:
+            er = expected[\"firewall_rule\"]
+            ar = action.get(\"firewall_rule\", {})
+            if isinstance(ar, dict) and ar.get(\"rule_action\") == er.get(\"rule_action\") and ar.get(\"target\") == er.get(\"target\") and ar.get(\"duration\") == er.get(\"duration\"):
                 firewall_score = 1.0
-        elif action.get("firewall_rule") is None:
+        elif action.get(\"firewall_rule\") is None:
             firewall_score = 1.0
- 
-        details["firewall_rule"] = {
-            "expected": expected.get("firewall_rule"),
-            "actual":   action.get("firewall_rule"),
-            "score":    firewall_score,
-        }
         total_score += firewall_score * 0.2
- 
         step_penalty = max(0, (self.step_count - 1) * 0.05)
-        final_score  = max(0.0, total_score - step_penalty)
- 
-        return {
-            "score":        round(final_score, 4),
-            "reward":       round(final_score, 4),
-            "details":      details,
-            "step_penalty": step_penalty,
-        }
- 
-    def _find_current_scenario(self) -> Optional[Dict[str, Any]]:
+        final_score = max(0.0, total_score - step_penalty)
+        return {\"score\": round(final_score, 4), \"reward\": round(final_score, 4), \"details\": {}, \"step_penalty\": step_penalty}
+
+    def _find_current_scenario(self):
         if self.current_event is None:
             return None
-        for scenario in self.task_scenarios:
-            if scenario["event_id"] == self.current_event.event_id:
-                return scenario
+        for s in self.task_scenarios:
+            if s[\"event_id\"] == self.current_event.event_id:
+                return s
         return None
- 
- 
-# ── Singleton env used by Flask routes ────────────────────────────────────────
+
 env = AiSecurityEnv()
- 
- 
-# ── Flask HTTP endpoints (required by OpenEnv validator) ──────────────────────
- 
-@app.route("/", methods=["GET"])
+
+@app.route(\"/\", methods=[\"GET\"])
 def health():
-    """Health-check — validator pings this first."""
-    return jsonify({"status": "ok", "message": "AI Security OpenEnv is running"}), 200
- 
- 
-@app.route("/health", methods=["GET"])
+    return jsonify({\"status\": \"ok\", \"message\": \"AI Security OpenEnv is running\"}), 200
+
+@app.route(\"/health\", methods=[\"GET\"])
 def health_check():
-    return jsonify({"status": "ok"}), 200
- 
- 
-@app.route("/reset", methods=["POST"])       # ← MUST be POST
+    return jsonify({\"status\": \"ok\"}), 200
+
+@app.route(\"/reset\", methods=[\"POST\"])
 def reset():
-    """Reset environment and return initial state."""
     try:
-        state = env.reset()
-        return jsonify(state), 200
+        return jsonify(env.reset()), 200
     except Exception as e:
-        return jsonify({"type": "error", "error": {"message": str(e)}}), 500
- 
- 
-@app.route("/step", methods=["POST"])        # ← MUST be POST
+        return jsonify({\"type\": \"error\", \"error\": {\"message\": str(e)}}), 500
+
+@app.route(\"/step\", methods=[\"POST\"])
 def step():
-    """Execute one step. Body: JSON action dict."""
     try:
         action = request.get_json(force=True)
         if action is None:
-            return jsonify({"type": "error", "error": {"message": "No JSON body"}}), 400
- 
+            return jsonify({\"type\": \"error\", \"error\": {\"message\": \"No JSON body\"}}), 400
         observation, reward, done, info = env.step(action)
-        return jsonify({
-            "observation": observation,
-            "reward":      reward,
-            "done":        done,
-            "info":        info,
-        }), 200
+        return jsonify({\"observation\": observation, \"reward\": reward, \"done\": done, \"info\": info}), 200
     except Exception as e:
-        return jsonify({"type": "error", "error": {"message": str(e)}}), 500
- 
- 
-@app.route("/state", methods=["GET"])        # ← GET is fine
+        return jsonify({\"type\": \"error\", \"error\": {\"message\": str(e)}}), 500
+
+@app.route(\"/state\", methods=[\"GET\"])
 def state():
-    """Return current state without side-effects."""
     try:
         return jsonify(env.state()), 200
     except RuntimeError:
-        # Not initialised yet — auto-reset
-        s = env.reset()
-        return jsonify(s), 200
- 
- 
-# ── Validation helper (unchanged) ─────────────────────────────────────────────
- 
-def validate_openenv_api():
-    e = AiSecurityEnv()
-    assert hasattr(e, "reset") and callable(e.reset)
-    assert hasattr(e, "step")  and callable(e.step)
- 
-    state = e.reset()
-    assert isinstance(state, dict) and "event_id" in state
- 
-    action = {"allow": False, "threat_type": "data_exfiltration", "response_action": "block"}
-    obs, reward, done, info = e.step(action)
-    assert isinstance(obs,    dict)
-    assert isinstance(reward, float)
-    assert isinstance(done,   bool)
-    assert isinstance(info,   dict)
-    print("[OK] OpenEnv API compliance validated")
- 
- 
-# ── Entry point ───────────────────────────────────────────────────────────────
- 
-if __name__ == "__main__":
-    validate_openenv_api()
-    # Port 7860 is required for HuggingFace Spaces
-    app.run(host="0.0.0.0", port=7860, debug=False)
+        return jsonify(env.reset()), 200
+
+if __name__ == \"__main__\":
+    app.run(host=\"0.0.0.0\", port=7860, debug=False)
+'''
+with open('environment.py', 'w', encoding='utf-8') as f:
+    f.write(content)
+print('Done')
+"
