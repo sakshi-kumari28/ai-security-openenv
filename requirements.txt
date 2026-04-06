@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 flask==3.0.3
 pyyaml==6.0.1
 pydantic==2.8.2
@@ -7,3 +8,16 @@ openai==1.3.9
 python-dotenv==1.0.0
 gradio==4.15.0
 
+=======
+# AI Security OpenEnv
+gradio
+
+# This project uses only Python standard library modules for core functionality:
+# - random, typing, dataclasses, enum, json, argparse, re
+#
+# Minimal venv setup:
+#   python -m venv .venv
+#   source .venv/bin/activate  (or .venv\Scripts\Activate.ps1 on Windows)
+#   pip install -r requirements.txt
+#   python app.py
+>>>>>>> 99333add87ad7a450d1c3bdc3113d19d507a9142

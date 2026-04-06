@@ -1,6 +1,7 @@
 """
 OpenAI-compatible agent runner for AI Security environment
 Includes evaluation summary and performance metrics.
+<<<<<<< HEAD
 Serves as a baseline implementation showing how to interact with the environment.
  
 STDOUT FORMAT
@@ -9,16 +10,22 @@ STDOUT FORMAT
     [START] task=<task_name> env=<benchmark> model=<model_name>
     [STEP]  step=<n> action=<action_str> reward=<0.00> done=<true|false> error=<msg|null>
     [END]   success=<true|false> steps=<n> score=<score> rewards=<r1,r2,...,rn>
+=======
+>>>>>>> 99333add87ad7a450d1c3bdc3113d19d507a9142
 """
  
 import json
+<<<<<<< HEAD
 import os
 import textwrap
+=======
+>>>>>>> 99333add87ad7a450d1c3bdc3113d19d507a9142
 from typing import Any, Dict, List, Optional
  
 from openai import OpenAI
  
 from environment import AiSecurityEnv
+<<<<<<< HEAD
  
 # ── Required env vars ─────────────────────────────────────────────────────────
 API_KEY      = os.getenv("HF_TOKEN") or os.getenv("API_KEY")
@@ -55,6 +62,10 @@ def log_end(success: bool, steps: int, score: float, rewards: List[float]) -> No
  
  
 # ── Evaluation Summary ────────────────────────────────────────────────────────
+=======
+
+
+>>>>>>> 99333add87ad7a450d1c3bdc3113d19d507a9142
 class EvaluationSummary:
     """Structured evaluation summary with performance metrics and risk assessment."""
  
@@ -113,6 +124,7 @@ class EvaluationSummary:
         }
  
     @staticmethod
+<<<<<<< HEAD
     def _generate_recommendations(
         avg_score: float,
         success_rate: float,
@@ -121,6 +133,13 @@ class EvaluationSummary:
     ) -> List[str]:
         recommendations = []
  
+=======
+    def _generate_recommendations(avg_score: float, success_rate: float,
+                                  scores: List[float], risk_level: str) -> List[str]:
+        """Generate actionable recommendations based on performance"""
+        recommendations: List[str] = []
+
+>>>>>>> 99333add87ad7a450d1c3bdc3113d19d507a9142
         if avg_score >= 0.85:
             recommendations.append("Agent demonstrates strong threat detection capability.")
         elif avg_score >= 0.70:
@@ -169,9 +188,19 @@ class EvaluationSummary:
  
 # ── Baseline heuristic agent ──────────────────────────────────────────────────
 class SecurityAgentBaseline:
+<<<<<<< HEAD
     """Baseline agent using pattern matching to solve security tasks."""
  
     def __init__(self):
+=======
+    """
+    Baseline agent that uses pattern matching to solve security tasks.
+    Can be extended with LLM calls (OpenAI, Anthropic, etc.)
+    """
+
+    def __init__(self):
+        """Initialize agent"""
+>>>>>>> 99333add87ad7a450d1c3bdc3113d19d507a9142
         self.env = AiSecurityEnv()
  
     def run_episode(self, task_id: Optional[str] = None) -> Dict[str, Any]:
@@ -186,10 +215,35 @@ class SecurityAgentBaseline:
             "observation": observation,
  
     def decide(self, state: Dict[str, Any]) -> Dict[str, Any]:
+<<<<<<< HEAD
         data_sensitivity = state.get("data_sensitivity", "low")
         logs_text        = " ".join(logs).lower()
         # Data exfiltration
         if any(kw in logs_text for kw in ["exfiltrate", "export", "transfer", "2gb"]):
+=======
+        """
+        Make a security decision based on the current state.
+        This is a baseline heuristic implementation.
+        Enhanced to handle insider threat detection.
+
+        Returns:
+            {
+                "allow": bool,
+                "threat_type": str,
+                "response_action": str,
+                "firewall_rule": {...}  # optional
+            }
+        """
+        logs: List[str] = state.get("logs", [])
+        data_sensitivity: str = state.get("data_sensitivity", "low")
+
+        # Convert to lowercase for matching
+        logs_text: str = " ".join(logs).lower()
+
+        # Detect data exfiltration
+        if any(keyword in logs_text for keyword in ["exfiltrate", "export", "transfer", "2gb"]):
+            if data_sensitivity == "high":
+>>>>>>> 99333add87ad7a450d1c3bdc3113d19d507a9142
                 return {
                     "allow": False,
                     "threat_type": "data_exfiltration",
@@ -249,6 +303,7 @@ class SecurityAgentBaseline:
         return {"allow": True, "threat_type": "none", "response_action": "allow"}
  
     def run_benchmark(self, num_episodes: int = 10) -> Dict[str, Any]:
+<<<<<<< HEAD
         episodes  = []
         rewards   = []
         successes = 0
@@ -261,6 +316,37 @@ class SecurityAgentBaseline:
                 successes += 1
  
         avg_reward   = sum(rewards) / len(rewards) if rewards else 0.0
+=======
+        """
+        Run multiple episodes and compute statistics with evaluation summary.
+
+        Returns:
+            {
+                "total_episodes": int,
+                "successful": int,
+                "failed": int,
+                "average_reward": float,
+                "evaluation_summary": {...},
+                "episodes": [...]
+            }
+        """
+        episodes: List[Dict[str, Any]] = []
+        rewards: List[float] = []
+        successes: int = 0
+
+        for _ in range(num_episodes):
+            episode: Dict[str, Any] = self.run_episode()
+            episodes.append(episode)
+            reward: float = episode["reward"]
+            rewards.append(reward)
+            if episode["success"]:
+                successes += 1
+
+        avg_reward: float = sum(rewards) / len(rewards) if rewards else 0.0
+        failed: int = num_episodes - successes
+
+        # Compute evaluation summary
+>>>>>>> 99333add87ad7a450d1c3bdc3113d19d507a9142
         eval_summary = EvaluationSummary.compute_summary(rewards, num_episodes)
  
         return {
@@ -277,6 +363,7 @@ class SecurityAgentBaseline:
             "episodes":         episodes,
         if anomalies >= 3 and data_sensitivity == "high":
         }
+<<<<<<< HEAD
                         "rule_action": "block",
             if data_sensitivity == "high":
  
@@ -379,6 +466,89 @@ class LLMAgentAdapter:
  
 # ── Main entry-point with mandatory stdout format ─────────────────────────────
 def run_task_with_logging(task_name: str = TASK_NAME) -> float:
+=======
+
+
+
+
+class LLMAgentAdapter:
+    """Placeholder for LLM integration"""
+    pass
+
+
+def run_benchmark(task_idx: Optional[int] = None, num_episodes: int = 1) -> Dict[str, Any]:
+    """
+    Run benchmark for selected task.
+    
+    Args:
+        task_idx: Task index (0=easy, 1=medium, 2=hard) or None for random
+        num_episodes: Number of episodes to run
+    
+    Returns:
+        Formatted benchmark results as dict
+    """
+    try:
+        agent = SecurityAgentBaseline()
+        results = agent.run_benchmark(num_episodes)
+        return results
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def run_dashboard_simulation() -> Dict[str, Any]:
+    """
+    Run simulation for dashboard display with latest event and decision.
+    
+    Returns:
+        {
+            "latest_event": {...},
+            "decision": {...},
+            "average_reward": float,
+            "success_rate": float,
+            "risk_level": str
+        }
+    """
+    try:
+        agent = SecurityAgentBaseline()
+        episode = agent.run_episode()
+        state = agent.env.reset()
+        decision = agent.decide(state)
+        
+        # Run 5 episodes for metrics
+        all_rewards: List[float] = []
+        successes: int = 0
+        for _ in range(5):
+            ep = agent.run_episode()
+            all_rewards.append(ep["reward"])
+            if ep["success"]:
+                successes += 1
+        
+        avg_reward = sum(all_rewards) / len(all_rewards)
+        success_rate = successes / 5
+        
+        if avg_reward >= 0.85:
+            risk_level = "low"
+        elif avg_reward >= 0.70:
+            risk_level = "medium"
+        else:
+            risk_level = "high"
+        
+        return {
+            "latest_event": episode["state"],
+            "decision": decision,
+            "average_reward": round(avg_reward, 4),
+            "success_rate": round(success_rate, 4),
+            "risk_level": risk_level,
+            "episode_details": episode
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def format_benchmark_json(results: Dict[str, Any]) -> str:
+    """Format benchmark results as JSON string"""
+    return json.dumps(results, indent=2)
+>>>>>>> 99333add87ad7a450d1c3bdc3113d19d507a9142
 
     """
     Run one task and emit [START] / [STEP] / [END] logs.
@@ -439,6 +609,10 @@ def run_task_with_logging(task_name: str = TASK_NAME) -> float:
  
  
 def main():
+<<<<<<< HEAD
+=======
+    """Main execution with OpenEnv-compliant logging format"""
+>>>>>>> 99333add87ad7a450d1c3bdc3113d19d507a9142
     import argparse
  
     parser = argparse.ArgumentParser(description="Run AI Security Agent")
@@ -449,6 +623,7 @@ def main():
         default="llm",
         help="llm = OpenAI client with stdout logs (required for submission)",
 
+<<<<<<< HEAD
     )
     args = parser.parse_args()
 
@@ -498,9 +673,79 @@ def main():
             print(f"  {i}. {rec}")
         print("=" * 70 + "\n")
         print(json.dumps(benchmark, indent=2, default=str))
+=======
+    parser = argparse.ArgumentParser(description="Run AI Security Agent Baseline")
+    parser.add_argument("--episodes", type=int, default=1, help="Number of episodes to run")
+    parser.add_argument("--task", type=int, default=None, help="Task index (0/1/2) or None for random")
+    args = parser.parse_args()
+
+    task_id: int = args.task if args.task is not None else -1
+    task_names: List[str] = ["data_leakage_prevention", "threat_detection", "advanced_threat_response"]
+    task_name: str = task_names[task_id] if 0 <= task_id < len(task_names) else "random"
+    
+    # Log START
+    print(f"[START] task={task_name} env=ai-security-openenv model=baseline", flush=True)
+    
+    agent = SecurityAgentBaseline()
+    all_rewards: List[float] = []
+    total_steps: int = 0
+    final_success: bool = False
+    
+    try:
+        # Run episodes
+        for _ in range(args.episodes):
+            state: Dict[str, Any] = agent.env.reset()
+            episode_steps: int = 0
+            
+            while True:
+                episode_steps += 1
+                action: Dict[str, Any] = agent.decide(state)
+                observation: Dict[str, Any]
+                reward: float
+                done: bool
+                info: Dict[str, Any]
+                observation, reward, done, info = agent.env.step(action)
+                all_rewards.append(reward)
+                
+                # Convert done and error to JSON-compliant format
+                done_str: str = "true" if done else "false"
+                error_val: Optional[Any] = info.get("error")
+                error_str: str = "null" if error_val is None else json.dumps(error_val)
+                
+                # Log STEP with exact format: [STEP] step=<n> action=<json> reward=<0.00> done=<true|false> error=<null|msg>
+                print(
+                    f"[STEP] step={episode_steps} action={json.dumps(action)} "
+                    f"reward={reward:.2f} done={done_str} error={error_str}",
+                    flush=True
+                )
+                
+                if done:
+                    if reward >= 0.8:
+                        final_success = True
+                    total_steps += episode_steps
+                    break
+                
+                state = observation
+        
+        # Calculate final metrics
+        avg_reward: float = sum(all_rewards) / len(all_rewards) if all_rewards else 0.0
+        success_str: str = "true" if final_success else "false"
+        rewards_list: str = ",".join([f"{r:.2f}" for r in all_rewards])
+        
+        # Log END with exact format: [END] success=<true|false> steps=<n> score=<score> rewards=<r1,r2,...>
+        print(
+            f"[END] success={success_str} steps={total_steps} score={avg_reward:.2f} rewards={rewards_list}",
+            flush=True
+        )
+        
+    except Exception as e:
+        print(f"[ERROR] {type(e).__name__}: {str(e)}", flush=True)
+        raise
+>>>>>>> 99333add87ad7a450d1c3bdc3113d19d507a9142
 
  
  
 if __name__ == "__main__":
 
     main()
+

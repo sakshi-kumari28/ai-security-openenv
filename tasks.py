@@ -4,12 +4,8 @@ Includes advanced grading robustness with semantic normalization.
 """
 
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 from enum import Enum
-import re
-
-
-import re
 
 
 # =============================================================================
@@ -41,7 +37,7 @@ class SemanticNormalizer:
     }
 
     # Reverse mapping for normalization
-    _NORMALIZATION_MAP = {}
+    _NORMALIZATION_MAP: Dict[str, str] = {}
 
     @classmethod
     def _build_map(cls):
@@ -59,7 +55,7 @@ class SemanticNormalizer:
         If no mapping exists, returns original lowercased version.
         """
         cls._build_map()
-        normalized = value.lower().strip() if isinstance(value, str) else str(value).lower().strip()
+        normalized = value.lower().strip()
         return cls._NORMALIZATION_MAP.get(normalized, normalized)
 
     @classmethod
@@ -229,12 +225,12 @@ class GradingEngine:
                 "feedback": str
             }
         """
-        details = {}
-        total_score = 0.0
+        details: Dict[str, Dict[str, Any]] = {}
+        total_score: float = 0.0
 
         # Grade "allow" field (strict boolean match)
-        expected_allow = task.expected_output.get("allow")
-        actual_allow = agent_output.get("allow")
+        expected_allow: bool = task.expected_output.get("allow", False)
+        actual_allow: Optional[bool] = agent_output.get("allow")
         allow_match = expected_allow == actual_allow
         allow_score = 1.0 if allow_match else 0.0
         details["allow"] = {
@@ -246,8 +242,8 @@ class GradingEngine:
         total_score += allow_score * GradingEngine.WEIGHTS["allow"]
 
         # Grade "threat_type" field (with semantic normalization)
-        expected_threat = task.expected_output.get("threat_type")
-        actual_threat = agent_output.get("threat_type")
+        expected_threat: str = task.expected_output.get("threat_type", "")
+        actual_threat: Optional[str] = agent_output.get("threat_type")
         threat_match = GradingEngine._match_with_normalization(actual_threat, expected_threat)
         threat_score = 1.0 if threat_match else 0.0
         details["threat_type"] = {
@@ -259,8 +255,8 @@ class GradingEngine:
         total_score += threat_score * GradingEngine.WEIGHTS["threat_type"]
 
         # Grade "response_action" field (with semantic normalization)
-        expected_action = task.expected_output.get("response_action")
-        actual_action = agent_output.get("response_action")
+        expected_action: str = task.expected_output.get("response_action", "")
+        actual_action: Optional[str] = agent_output.get("response_action")
         action_match = GradingEngine._match_with_normalization(actual_action, expected_action)
         action_score = 1.0 if action_match else 0.0
         details["response_action"] = {
@@ -272,9 +268,9 @@ class GradingEngine:
         total_score += action_score * GradingEngine.WEIGHTS["response_action"]
 
         # Grade "firewall_rule" field (strict match, only if expected)
-        expected_rule = task.expected_output.get("firewall_rule")
-        actual_rule = agent_output.get("firewall_rule")
-        rule_match = True
+        expected_rule: Optional[Dict[str, Any]] = task.expected_output.get("firewall_rule")
+        actual_rule: Optional[Dict[str, Any]] = agent_output.get("firewall_rule")
+        rule_match: bool = True
         
         if expected_rule is not None:
             if not isinstance(actual_rule, dict):
@@ -333,7 +329,7 @@ class GradingEngine:
     @staticmethod
     def _generate_feedback(details: Dict[str, Any], passed: bool) -> str:
         """Generate human-readable grading feedback"""
-        feedback_parts = []
+        feedback_parts: List[str] = []
 
         if passed:
             feedback_parts.append("[PASS] Excellent! All critical fields matched expected output.")
@@ -382,21 +378,21 @@ class TaskRegistry:
 # Testing and validation
 def test_grading():
     """Test grading engine including semantic normalization"""
-    task = TASKS["data_leakage_prevention"]
+    task: TaskDefinition = TASKS["data_leakage_prevention"]
     
     # Perfect match
-    output = {
+    output: Dict[str, Any] = {
         "allow": False,
         "threat_type": "data_exfiltration",
         "response_action": "block"
     }
-    result = GradingEngine.grade(task, output)
+    result: Dict[str, Any] = GradingEngine.grade(task, output)
     assert result["score"] == 1.0, f"Expected score 1.0, got {result['score']}"
     assert result["passed"], "Expected to pass"
     print(f"[PASS] Perfect match test passed: {result['score']}")
 
     # Partial match
-    output = {
+    output: Dict[str, Any] = {
         "allow": False,
         "threat_type": "brute_force",  # Wrong
         "response_action": "block"
@@ -406,8 +402,8 @@ def test_grading():
     print(f"[PASS] Partial match test passed: {result['score']}")
 
     # Semantic normalization test: "block_ip" vs "block ip"
-    task_brute = TASKS["threat_detection_brute_force"]
-    output = {
+    task_brute: TaskDefinition = TASKS["threat_detection_brute_force"]
+    output: Dict[str, Any] = {
         "allow": False,
         "threat_type": "brute_force",
         "response_action": "block ip",  # Semantically equivalent to "block_ip"
@@ -422,7 +418,7 @@ def test_grading():
     print(f"[PASS] Semantic normalization test passed: {result['score']}")
 
     # Complete mismatch
-    output = {
+    output: Dict[str, Any] = {
         "allow": True,  # Wrong
         "threat_type": "brute_force",  # Wrong for EVT-001
         "response_action": "allow",  # Wrong
