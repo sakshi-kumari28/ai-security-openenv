@@ -28,7 +28,7 @@ TASK_NAME    = os.getenv("TASK_NAME", "data_leakage_prevention")
 BENCHMARK    = "ai-security-openenv"
 MAX_STEPS    = 8
  
-client = OpenAI(api_key=API_KEY, base_url=API_BASE_URL)
+client = OpenAI(api_key=API_KEY if API_KEY else "dummy-key", base_url=API_BASE_URL)
  
 # ── Mandatory stdout loggers ──────────────────────────────────────────────────
 def log_start(task: str, env: str, model: str) -> None:
