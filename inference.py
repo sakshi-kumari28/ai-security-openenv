@@ -334,7 +334,7 @@ def run_task_with_logging(task_name: str = TASK_NAME) -> float:
     log_start(task_name, BENCHMARK, MODEL_NAME)
  
     env     = AiSecurityEnv()
-    agent   = LLMAgentAdapter()
+    agent   = SecurityAgentBaseline()
  
     rewards: List[float] = []
     score   = 0.0
@@ -350,11 +350,7 @@ def run_task_with_logging(task_name: str = TASK_NAME) -> float:
         done   = False
  
         try:
-            prompt = agent.build_prompt(state)
-            action = agent.call_llm(prompt)
- 
-            if action is None:
-                action = SecurityAgentBaseline().decide(state)
+            action = agent.decide(state)
  
             observation, reward, done, info = env.step(action)
             score   = reward
