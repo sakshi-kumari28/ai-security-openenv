@@ -1,3 +1,12 @@
+---
+title: AI Security OpenEnv
+emoji: 🔐
+colorFrom: blue
+colorTo: red
+sdk: docker
+pinned: false
+---
+
 title: AI Security OpenEnv
 emoji: 🔐
 colorFrom: red
