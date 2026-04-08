@@ -26,7 +26,7 @@ API_BASE_URL = os.getenv("API_BASE_URL", "https://router.huggingface.co/v1")
 MODEL_NAME   = os.getenv("MODEL_NAME", "Qwen/Qwen2.5-72B-Instruct")
 TASK_NAME    = os.getenv("TASK_NAME", "data_leakage_prevention")
 BENCHMARK    = "ai-security-openenv"
-MAX_STEPS    = 8
+MAX_STEPS    = 1
  
 client = OpenAI(api_key=API_KEY if API_KEY else "dummy-key", base_url=API_BASE_URL)
  

@@ -96,7 +96,7 @@ class AiSecurityEnv:
             return self._get_state(), -0.2, True, {"error": "Invalid action"}
         grade = self._grade_action(action)
         reward = grade["reward"]
-        done = (reward == 1.0) or (self.step_count >= self.max_steps)
+        done = (reward >= 0.5) or (self.step_count >= self.max_steps)
         if done and self.current_event:
             self.current_event.status = "processed"
             self.current_event.decision = action
