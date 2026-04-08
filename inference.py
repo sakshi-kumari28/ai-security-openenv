@@ -55,8 +55,6 @@ def log_end(success: bool, steps: int, score: float, rewards: List[float]) -> No
  
  
 # ── Evaluation Summary ────────────────────────────────────────────────────────
-
-
 class EvaluationSummary:
     """Structured evaluation summary with performance metrics and risk assessment."""
  
@@ -121,13 +119,9 @@ class EvaluationSummary:
         scores: List[float],
         risk_level: str,
     ) -> List[str]:
-        recommendations = []
- 
-    def _generate_recommendations(avg_score: float, success_rate: float,
-                                  scores: List[float], risk_level: str) -> List[str]:
-        """Generate actionable recommendations based on performance"""
+        """Generate actionable recommendations based on performance."""
         recommendations: List[str] = []
-
+ 
         if avg_score >= 0.85:
             recommendations.append("Agent demonstrates strong threat detection capability.")
         elif avg_score >= 0.70:
@@ -145,7 +139,7 @@ class EvaluationSummary:
             )
  
         if scores:
-            min_score = min(scores)   # ← BUG FIX: was on same line as max_score
+            min_score = min(scores)
             max_score = max(scores)
             variance  = max_score - min_score
  
@@ -179,52 +173,34 @@ class SecurityAgentBaseline:
     """Baseline agent using pattern matching to solve security tasks."""
  
     def __init__(self):
-    """
-    Baseline agent that uses pattern matching to solve security tasks.
-    Can be extended with LLM calls (OpenAI, Anthropic, etc.)
-    """
-
-    def __init__(self):
-        """Initialize agent"""
+        """Initialize agent."""
         self.env = AiSecurityEnv()
  
     def run_episode(self, task_id: Optional[str] = None) -> Dict[str, Any]:
         state = self.env.reset()
         action = self.decide(state)
         observation, reward, done, info = self.env.step(action)
+        success = reward >= 0.8
         return {
             "task":        state.get("event_id"),
             "state":       state,
             "action":      action,
             "reward":      reward,
             "observation": observation,
+            "done":        done,
+            "success":     success,
+            "grade":       info.get("grade"),
+        }
  
     def decide(self, state: Dict[str, Any]) -> Dict[str, Any]:
+        """Make a security decision based on the current state."""
+        logs             = state.get("logs", [])
         data_sensitivity = state.get("data_sensitivity", "low")
         logs_text        = " ".join(logs).lower()
-        # Data exfiltration
-        if any(kw in logs_text for kw in ["exfiltrate", "export", "transfer", "2gb"]):
-        """
-        Make a security decision based on the current state.
-        This is a baseline heuristic implementation.
-        Enhanced to handle insider threat detection.
-
-        Returns:
-            {
-                "allow": bool,
-                "threat_type": str,
-                "response_action": str,
-                "firewall_rule": {...}  # optional
-            }
-        """
-        logs: List[str] = state.get("logs", [])
-        data_sensitivity: str = state.get("data_sensitivity", "low")
-
-        # Convert to lowercase for matching
-        logs_text: str = " ".join(logs).lower()
-
+ 
         # Detect data exfiltration
-        if any(keyword in logs_text for keyword in ["exfiltrate", "export", "transfer", "2gb"]):
+        exfil_kw = ["exfiltrate", "export", "transfer", "2gb"]
+        if any(kw in logs_text for kw in exfil_kw):
             if data_sensitivity == "high":
                 return {
                     "allow": False,
@@ -233,28 +209,31 @@ class SecurityAgentBaseline:
                 }
  
         # Brute force
-        if "failed login" in logs_text and "successful login" in logs_text:
-            if logs_text.count("failed login") >= 3:
-                return {
-                    "allow": False,
-                    "threat_type": "brute_force",
-                    "response_action": "block_ip",
-                    "firewall_rule": {
-                        "target": "ip",
-                        "duration": "1h",
-                    },
-                }
+        if "failed login" in logs_text and logs_text.count("failed login") >= 3:
+            return {
+                "allow": False,
+                "threat_type": "brute_force",
+                "response_action": "block_ip",
+                "firewall_rule": {
+                    "rule_action": "block",
+                    "target": "ip",
+                    "duration": "1h",
+                },
+            }
  
         # Intrusion (multiple anomalies)
+        time_kw = ["midnight", "02:", "03:", "02:30"]
         anomalies = sum([
             "unusual" in logs_text,
             "unknown ip" in logs_text or ("unknown" in logs_text and "ip" in logs_text),
-            any(t in logs_text for t in ["midnight", "02:", "03:", "02:30"]),
+            any(t in logs_text for t in time_kw),
             "admin login" in logs_text,
         ])
+        if anomalies >= 2:
             return {
                 "allow": False,
                 "threat_type": "intrusion",
+                "response_action": "block and alert",
                 "firewall_rule": {
                     "rule_action": "block",
                     "target": "ip",
@@ -265,67 +244,31 @@ class SecurityAgentBaseline:
         # Insider threat
         insider_signals = (
             2 * any(kw in logs_text for kw in ["dropbox", "cloud", "personal", "external", "upload"])
-            + any(kw in logs_text for kw in ["financial", "hr", "salary", "sensitive"])
-            + (data_sensitivity == "high")
+            + ("after hours" in logs_text or "off hours" in logs_text)
+            + ("sensitive" in logs_text or data_sensitivity == "high")
         )
-        clean_signals = any(kw in logs_text for kw in ["clean", "training", "tenure", "3-year", "aware"])
- 
-        if (insider_signals - clean_signals) >= 3 and data_sensitivity == "high":
+        if insider_signals >= 2:
             return {
                 "allow": False,
                 "threat_type": "insider_threat",
-                "response_action": "block + alert",
-                "firewall_rule": {
-                    "rule_action": "block",
-                    "target": "endpoint",
-                    "duration": "12h",
-                },
+                "response_action": "alert and monitor",
             }
  
         return {"allow": True, "threat_type": "none", "response_action": "allow"}
  
     def run_benchmark(self, num_episodes: int = 10) -> Dict[str, Any]:
-        episodes  = []
-        rewards   = []
-        successes = 0
- 
-        for _ in range(num_episodes):
-            episode = self.run_episode()
-            episodes.append(episode)
-            rewards.append(episode["reward"])
-            if episode["success"]:
-                successes += 1
- 
-        avg_reward   = sum(rewards) / len(rewards) if rewards else 0.0
-        """
-        Run multiple episodes and compute statistics with evaluation summary.
-
-        Returns:
-            {
-                "total_episodes": int,
-                "successful": int,
-                "failed": int,
-                "average_reward": float,
-                "evaluation_summary": {...},
-                "episodes": [...]
-            }
-        """
-        episodes: List[Dict[str, Any]] = []
-        rewards: List[float] = []
+        episodes:  List[Dict] = []
+        rewards:   List[float] = []
         successes: int = 0
-
+ 
         for _ in range(num_episodes):
-            episode: Dict[str, Any] = self.run_episode()
-            episodes.append(episode)
-            reward: float = episode["reward"]
-            rewards.append(reward)
-            if episode["success"]:
+            ep = self.run_episode()
+            episodes.append(ep)
+            rewards.append(ep["reward"])
+            if ep["success"]:
                 successes += 1
-
-        avg_reward: float = sum(rewards) / len(rewards) if rewards else 0.0
-        failed: int = num_episodes - successes
-
-        # Compute evaluation summary
+ 
+        avg_reward = sum(rewards) / len(rewards) if rewards else 0.0
         eval_summary = EvaluationSummary.compute_summary(rewards, num_episodes)
  
         return {
@@ -337,228 +280,78 @@ class SecurityAgentBaseline:
             "min_reward":       round(min(rewards) if rewards else 0.0, 4),
             "max_reward":       round(max(rewards) if rewards else 0.0, 4),
             "evaluation_summary": eval_summary,
-            + any(t in logs_text for t in ["02:", "03:", "midnight", "night"])
-                "response_action": "block + alert",
             "episodes":         episodes,
-        if anomalies >= 3 and data_sensitivity == "high":
         }
-                        "rule_action": "block",
-            if data_sensitivity == "high":
  
  
- 
-        logs             = state.get("logs", [])
-# ── LLM Agent (OpenAI client — required by submission rules) ──────────────────
+# ── LLM-based agent ───────────────────────────────────────────────────────────
 class LLMAgentAdapter:
-            "grade":       info.get("grade"),
-
-    """LLM-based agent using OpenAI-compatible client."""
-
+    """Wraps an OpenAI-compatible LLM to act as a security agent."""
  
-
     SYSTEM_PROMPT = textwrap.dedent("""
-
-        You are a cybersecurity expert. Analyze the security event and respond
-
-        ONLY with a valid JSON object — no markdown, no explanation:
+        You are an AI security agent. Analyze the security event and respond with a JSON object:
         {
-
             "allow": <true|false>,
-
-            "threat_type": "<data_exfiltration|brute_force|intrusion|insider_threat|none>",
-
-            "response_action": "<string>",
-            "firewall_rule": {
-                "rule_action": "<allow|block>",
-                "target": "<ip|endpoint>",
-
-                "duration": "<string>"
-            }
-
+            "threat_type": "<none|data_exfiltration|brute_force|intrusion|insider_threat>",
+            "response_action": "<allow|block|block_ip|alert and monitor|block and alert>",
+            "firewall_rule": {"rule_action": "block", "target": "ip", "duration": "1h"}
         }
+        Only output valid JSON. No explanation.
     """).strip()
  
-    def __init__(self):
-        self.env = AiSecurityEnv()
-
- 
     def build_prompt(self, state: Dict[str, Any]) -> str:
-        logs = state.get("logs", [])
-
         return json.dumps({
-            "user_role":        state.get("user_role", ""),
-            "data_sensitivity": state.get("data_sensitivity", ""),
-
-            "logs":             logs,
-        })
+            "event_id":        state.get("event_id"),
+            "logs":            state.get("logs", []),
+            "data_sensitivity": state.get("data_sensitivity", "low"),
+            "user":            state.get("user"),
+            "source_ip":       state.get("source_ip"),
+        }, indent=2)
  
     def call_llm(self, prompt: str) -> Optional[Dict[str, Any]]:
-        """Call LLM via OpenAI-compatible client (required by submission rules)."""
         try:
             response = client.chat.completions.create(
                 model=MODEL_NAME,
-                max_tokens=300,
-                temperature=0.2,
                 messages=[
                     {"role": "system", "content": self.SYSTEM_PROMPT},
                     {"role": "user",   "content": prompt},
                 ],
+                temperature=0.0,
+                max_tokens=256,
             )
             raw = response.choices[0].message.content.strip()
             return json.loads(raw)
-        except Exception as e:
-            print(f"[LLM Error] {e}", flush=True)
+        except Exception:
             return None
  
-    def run_episode_with_llm(self, task_id: Optional[str] = None) -> Dict[str, Any]:
-
-        state  = self.env.reset()
-
-        prompt = self.build_prompt(state)
-
-        action = self.call_llm(prompt)
-
  
-        if action is None:
-
-            action = SecurityAgentBaseline().decide(state)
- 
-
-        observation, reward, done, info = self.env.step(action)
-
-        return {
-
-            "task":    state.get("event_id"),
-            "state":   state,
-
-            "action":  action,
-
-            "reward":  reward,
-
-            "grade":   info.get("grade"),
-
-            "success": reward >= 0.8,
-
-        }
- 
- 
-# ── Main entry-point with mandatory stdout format ─────────────────────────────
+# ── Task runner with OpenEnv logging ─────────────────────────────────────────
 def run_task_with_logging(task_name: str = TASK_NAME) -> float:
-
-
-
-
-class LLMAgentAdapter:
-    """Placeholder for LLM integration"""
-    pass
-
-
-def run_benchmark(task_idx: Optional[int] = None, num_episodes: int = 1) -> Dict[str, Any]:
-    """
-    Run benchmark for selected task.
-    
-    Args:
-        task_idx: Task index (0=easy, 1=medium, 2=hard) or None for random
-        num_episodes: Number of episodes to run
-    
-    Returns:
-        Formatted benchmark results as dict
-    """
-    try:
-        agent = SecurityAgentBaseline()
-        results = agent.run_benchmark(num_episodes)
-        return results
-    except Exception as e:
-        return {"error": str(e)}
-
-
-def run_dashboard_simulation() -> Dict[str, Any]:
-    """
-    Run simulation for dashboard display with latest event and decision.
-    
-    Returns:
-        {
-            "latest_event": {...},
-            "decision": {...},
-            "average_reward": float,
-            "success_rate": float,
-            "risk_level": str
-        }
-    """
-    try:
-        agent = SecurityAgentBaseline()
-        episode = agent.run_episode()
-        state = agent.env.reset()
-        decision = agent.decide(state)
-        
-        # Run 5 episodes for metrics
-        all_rewards: List[float] = []
-        successes: int = 0
-        for _ in range(5):
-            ep = agent.run_episode()
-            all_rewards.append(ep["reward"])
-            if ep["success"]:
-                successes += 1
-        
-        avg_reward = sum(all_rewards) / len(all_rewards)
-        success_rate = successes / 5
-        
-        if avg_reward >= 0.85:
-            risk_level = "low"
-        elif avg_reward >= 0.70:
-            risk_level = "medium"
-        else:
-            risk_level = "high"
-        
-        return {
-            "latest_event": episode["state"],
-            "decision": decision,
-            "average_reward": round(avg_reward, 4),
-            "success_rate": round(success_rate, 4),
-            "risk_level": risk_level,
-            "episode_details": episode
-        }
-    except Exception as e:
-        return {"error": str(e)}
-
-
-def format_benchmark_json(results: Dict[str, Any]) -> str:
-    """Format benchmark results as JSON string"""
-    return json.dumps(results, indent=2)
-
     """
     Run one task and emit [START] / [STEP] / [END] logs.
     Returns the final score in [0, 1].
-
     """
     log_start(task_name, BENCHMARK, MODEL_NAME)
  
-
     env     = AiSecurityEnv()
     agent   = LLMAgentAdapter()
-
+ 
     rewards: List[float] = []
-
     score   = 0.0
     success = False
-
     steps   = 0
  
     state = env.reset()
-
  
     for step in range(1, MAX_STEPS + 1):
-
         steps = step
-        error: Optional[str] = None
+        error:  Optional[str] = None
         reward = 0.0
         done   = False
  
-
         try:
             prompt = agent.build_prompt(state)
             action = agent.call_llm(prompt)
-
  
             if action is None:
                 action = SecurityAgentBaseline().decide(state)
@@ -566,7 +359,6 @@ def format_benchmark_json(results: Dict[str, Any]) -> str:
             observation, reward, done, info = env.step(action)
             score   = reward
             success = reward >= 0.5
-
             action_str = json.dumps(action)
  
         except Exception as e:
@@ -584,8 +376,51 @@ def format_benchmark_json(results: Dict[str, Any]) -> str:
     return score
  
  
+def get_security_status() -> Dict[str, Any]:
+    """Get current security status with recent episode data."""
+    try:
+        agent = SecurityAgentBaseline()
+        episode = agent.run_episode()
+        decision = agent.decide(episode["state"])
+ 
+        all_rewards: List[float] = []
+        successes: int = 0
+        for _ in range(5):
+            ep = agent.run_episode()
+            all_rewards.append(ep["reward"])
+            if ep["success"]:
+                successes += 1
+ 
+        avg_reward   = sum(all_rewards) / len(all_rewards)
+        success_rate = successes / 5
+ 
+        if avg_reward >= 0.85:
+            risk_level = "low"
+        elif avg_reward >= 0.70:
+            risk_level = "medium"
+        else:
+            risk_level = "high"
+ 
+        return {
+            "latest_event":   episode["state"],
+            "decision":       decision,
+            "average_reward": round(avg_reward, 4),
+            "success_rate":   round(success_rate, 4),
+            "risk_level":     risk_level,
+            "episode_details": episode,
+        }
+    except Exception as e:
+        return {"error": str(e)}
+ 
+ 
+def format_benchmark_json(results: Dict[str, Any]) -> str:
+    """Format benchmark results as JSON string."""
+    return json.dumps(results, indent=2)
+ 
+ 
+# ── Entry point ───────────────────────────────────────────────────────────────
 def main():
-    """Main execution with OpenEnv-compliant logging format"""
+    """Main execution with OpenEnv-compliant logging format."""
     import argparse
  
     parser = argparse.ArgumentParser(description="Run AI Security Agent")
@@ -595,127 +430,36 @@ def main():
         choices=["baseline", "benchmark", "llm"],
         default="llm",
         help="llm = OpenAI client with stdout logs (required for submission)",
-
     )
     args = parser.parse_args()
-
  
-
     if args.mode == "llm":
-        # ← Required path for submission validation
         run_task_with_logging(TASK_NAME)
-
  
-
     elif args.mode == "baseline":
-
         agent  = SecurityAgentBaseline()
-
         result = agent.run_episode()
-
         print(json.dumps(result, indent=2, default=str))
-
  
-
     elif args.mode == "benchmark":
         agent     = SecurityAgentBaseline()
-
         benchmark = agent.run_benchmark(args.episodes)
-
         summary   = benchmark["evaluation_summary"]
-
  
-
         print("\n" + "=" * 70)
         print("EVALUATION SUMMARY")
         print("=" * 70)
-
         print(f"Average Score: {summary['average_score']:.4f}")
-
         print(f"Median Score:  {summary['median_score']:.4f}")
-
         print(f"Success Rate:  {summary['success_rate']*100:.1f}%")
-
         print(f"Risk Level:    {summary['risk_level'].upper()}")
         print(f"Confidence:    {summary['confidence']*100:.1f}%")
         print("\nRecommendations:")
-
         for i, rec in enumerate(summary["recommendations"], 1):
-
             print(f"  {i}. {rec}")
         print("=" * 70 + "\n")
         print(json.dumps(benchmark, indent=2, default=str))
-    parser = argparse.ArgumentParser(description="Run AI Security Agent Baseline")
-    parser.add_argument("--episodes", type=int, default=1, help="Number of episodes to run")
-    parser.add_argument("--task", type=int, default=None, help="Task index (0/1/2) or None for random")
-    args = parser.parse_args()
-
-    task_id: int = args.task if args.task is not None else -1
-    task_names: List[str] = ["data_leakage_prevention", "threat_detection", "advanced_threat_response"]
-    task_name: str = task_names[task_id] if 0 <= task_id < len(task_names) else "random"
-    
-    # Log START
-    print(f"[START] task={task_name} env=ai-security-openenv model=baseline", flush=True)
-    
-    agent = SecurityAgentBaseline()
-    all_rewards: List[float] = []
-    total_steps: int = 0
-    final_success: bool = False
-    
-    try:
-        # Run episodes
-        for _ in range(args.episodes):
-            state: Dict[str, Any] = agent.env.reset()
-            episode_steps: int = 0
-            
-            while True:
-                episode_steps += 1
-                action: Dict[str, Any] = agent.decide(state)
-                observation: Dict[str, Any]
-                reward: float
-                done: bool
-                info: Dict[str, Any]
-                observation, reward, done, info = agent.env.step(action)
-                all_rewards.append(reward)
-                
-                # Convert done and error to JSON-compliant format
-                done_str: str = "true" if done else "false"
-                error_val: Optional[Any] = info.get("error")
-                error_str: str = "null" if error_val is None else json.dumps(error_val)
-                
-                # Log STEP with exact format: [STEP] step=<n> action=<json> reward=<0.00> done=<true|false> error=<null|msg>
-                print(
-                    f"[STEP] step={episode_steps} action={json.dumps(action)} "
-                    f"reward={reward:.2f} done={done_str} error={error_str}",
-                    flush=True
-                )
-                
-                if done:
-                    if reward >= 0.8:
-                        final_success = True
-                    total_steps += episode_steps
-                    break
-                
-                state = observation
-        
-        # Calculate final metrics
-        avg_reward: float = sum(all_rewards) / len(all_rewards) if all_rewards else 0.0
-        success_str: str = "true" if final_success else "false"
-        rewards_list: str = ",".join([f"{r:.2f}" for r in all_rewards])
-        
-        # Log END with exact format: [END] success=<true|false> steps=<n> score=<score> rewards=<r1,r2,...>
-        print(
-            f"[END] success={success_str} steps={total_steps} score={avg_reward:.2f} rewards={rewards_list}",
-            flush=True
-        )
-        
-    except Exception as e:
-        print(f"[ERROR] {type(e).__name__}: {str(e)}", flush=True)
-        raise
-
  
  
 if __name__ == "__main__":
-
     main()
-
